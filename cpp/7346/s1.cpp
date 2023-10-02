@@ -1,21 +1,10 @@
 #include <iostream>
-#include <string>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
-#include <netdb.h>
-#include <sys/uio.h>
-#include <sys/time.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <fstream>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <bits/stdc++.h>
-#include <string>
 using namespace std;
 
 int getR(int x)
@@ -153,11 +142,11 @@ vector<int> convertASCII_Binary(char inputChar)
         binaryVector.push_back(binaryRepresentation[i]);
     }
     reverse(binaryVector.begin(), binaryVector.end());
-    std::cout << "Binary representation of '" << inputChar << "': ";
-    for (int i=binaryVector.size()-1; i>=0; i--) {
-        std::cout << binaryVector[i];
-    }
-    cout << endl;
+    // std::cout << "Binary representation of '" << inputChar << "': ";
+    // for (int bit : binaryVector) {
+    //     std::cout << bit;
+    // }
+    // cout << endl;
     return binaryVector;
 }
 
@@ -173,11 +162,11 @@ char binaryToChar(vector<int> binaryVector)
     return convertedChar;
 }
 
-string hammingClient(bool e)
+string hammingClient(bool e, char inputChar)
 {
-    char inputChar;
-    std::cout << endl << "Enter character: ";
-    std::cin >> inputChar;
+    // char inputChar;
+    // std::cout << "Enter a character: ";
+    // std::cin >> inputChar;
     vector<int> data =convertASCII_Binary(inputChar);
     reverse(data.begin(), data.end());
     vector<int> hc =encodeHamming(data);
@@ -187,117 +176,99 @@ string hammingClient(bool e)
     else if(e && hc[1]==1)
         hc[1] =0;
 
-    cout << "Hamming Code Sent: ";
-    string final;
-    
-    for (int i=1; i<hc.size(); i++)
-        cout << hc[i];
-    cout << endl;
+    // cout << "Hamming Code: ";
+    string final ="";
+    // for (int i=1; i<hc.size(); i++)
+    // {
+    //     cout << hc[i];
+    // }
     for (int i=0; i<hc.size(); i++)
     {
-        final +=to_string(hc[i]);
+        final +=hc[i];
     }
-
+    // cout << endl;
     return final;
 }
 
 void hammingServer(string d)
 {
     vector<int> hc;
-    for (char c : d) {
-        // Check if the character is a digit (0-9)
-        if (std::isdigit(c)) {
-            // Convert the character to an integer and push it into the vector
-            int digit = c - '0'; // Convert character to integer
-            hc.push_back(digit);
-        }
-    }
-
-    cout << "Hamming Code Recieved: ";
+    for (int i =0; i<d.size(); i++)
+        hc.push_back(d[i]);
+    cout << "Hamming Code: ";
     for (int i=1; i<hc.size(); i++)
         cout << hc[i];
-    cout<<endl;
-    // cout << "Hamming Code: ";
-    // for (int i=1; i<hc.size(); i++)
-    //     cout << hc[i];
-    // cout << endl;
-
-    hc = decodeHamming(hc);
-    
     cout << endl;
+    hc = decodeHamming(hc);
     cout << "Binary representation Server: ";
     for (auto &h : hc)
         cout << h;
     cout << endl;
-    cout << "Server: ";
+    cout << "Data: ";
     vector<int> binaryVector =hc;
     reverse(hc.begin(), hc.end());
     binaryToChar(hc);
 }
 
 
+int main() {
+    int serverSocket, clientSocket;
+    struct sockaddr_in serverAddr, clientAddr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
+    char buffer[1024];
 
-//Client side
-int main(int argc, char *argv[])
-{
-    //we need 2 things: ip address and port number, in that order
-    if(argc != 3)
-    {
-        cerr << "Usage: ip_address port" << endl; exit(0); 
-    } //grab the IP address and port number 
-    char *serverIp = argv[1]; int port = atoi(argv[2]); 
-    //create a message buffer 
-    char msg[1500]; 
-    //setup a socket and connection tools 
-    struct hostent* host = gethostbyname(serverIp); 
-    sockaddr_in sendSockAddr;   
-    bzero((char*)&sendSockAddr, sizeof(sendSockAddr)); 
-    sendSockAddr.sin_family = AF_INET; 
-    sendSockAddr.sin_addr.s_addr = 
-        inet_addr(inet_ntoa(*(struct in_addr*)*host->h_addr_list));
-    sendSockAddr.sin_port = htons(port);
-    int clientSd = socket(AF_INET, SOCK_STREAM, 0);
-    //try to connect...
-    int status = connect(clientSd,
-                         (sockaddr*) &sendSockAddr, sizeof(sendSockAddr));
-    if(status < 0)
-    {
-        cout<<"Error connecting to socket!"<<endl; 
+    // Create socket
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket == -1) {
+        std::cerr << "Error creating socket" << std::endl;
+        return 1;
     }
-    cout << "Connected to the server!" << endl;
-    int bytesRead, bytesWritten = 0;
-    struct timeval start1, end1;
-    gettimeofday(&start1, NULL);
-    while(1)
-    {
-        string data =hammingClient(false);
-        memset(&msg, 0, sizeof(msg));//clear the buffer
-        strcpy(msg, data.c_str());
 
-        if(data == "exit")
-        {
-            send(clientSd, (char*)&msg, strlen(msg), 0);
+    // Set up server address
+    memset(&serverAddr, 0, sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(8081); // Choose a port
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+    // Bind socket to address
+    if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {
+        std::cerr << "Error binding socket" << std::endl;
+        return 1;
+    }
+
+    // Listen for connections
+    if (listen(serverSocket, 5) == -1) {
+        std::cerr << "Error listening on socket" << std::endl;
+        return 1;
+    }
+
+    std::cout << "Server listening on port 12345..." << std::endl;
+
+    // Accept a client connection
+    clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrLen);
+    if (clientSocket == -1) {
+        std::cerr << "Error accepting client connection" << std::endl;
+        return 1;
+    }
+
+    while (true) {
+        // Receive data from client
+        memset(buffer, 0, sizeof(buffer));
+        int bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
+        if (bytesRead <= 0) {
+            std::cerr << "Client disconnected" << std::endl;
             break;
         }
-        bytesWritten += send(clientSd, (char*)&msg, strlen(msg), 0);
-        cout << endl << "Awaiting server response..." << endl;
-        memset(&msg, 0, sizeof(msg));//clear the buffer
-        bytesRead += recv(clientSd, (char*)&msg, sizeof(msg), 0);
-        if(!strcmp(msg, "exit"))
-        {
-            cout << "Server has quit the session" << endl;
-            break;
-        }
-        string clientData(msg);
-        hammingServer(clientData);
+
+        // Display received message
+        // std::cout << "Client: " << buffer << std::endl;
+        string data =hammingClient(false, buffer[0]);
+        hammingServer(data);
     }
-    gettimeofday(&end1, NULL);
-    close(clientSd);
-    cout << "********Session********" << endl;
-    cout << "Bytes written: " << bytesWritten << 
-    " Bytes read: " << bytesRead << endl;
-    cout << "Elapsed time: " << (end1.tv_sec- start1.tv_sec) 
-      << " secs" << endl;
-    cout << "Connection closed" << endl;
-    return 0;    
+
+    // Close sockets
+    close(clientSocket);
+    close(serverSocket);
+
+    return 0;
 }

@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <string>
 using namespace std;
 
 int getR(int x)
@@ -101,6 +102,7 @@ vector<int> decodeHamming(vector<int> &hc)
 
    if (!correct)
    {
+        cout << "Error detected in Hamming Code. Correcting...\n"; 
         int t =0;
         for (int i=0; i<r; i++)
             if(R[i])
@@ -122,16 +124,96 @@ vector<int> decodeHamming(vector<int> &hc)
             k++;
     }
 
+    reverse(data.begin(), data.end());
    return data;
+}
+
+vector<int> convertASCII_Binary(char inputChar)
+{
+    std::bitset<8> binaryRepresentation(inputChar);
+    std::vector<int> binaryVector;
+    
+    for (int i = 0; i < 8; ++i) {
+        binaryVector.push_back(binaryRepresentation[i]);
+    }
+    reverse(binaryVector.begin(), binaryVector.end());
+    std::cout << "Binary representation of '" << inputChar << "': ";
+    for (int i=binaryVector.size()-1; i>=0; i--) {
+        std::cout << binaryVector[i];
+    }
+    cout << endl;
+    return binaryVector;
+}
+
+char binaryToChar(vector<int> binaryVector)
+{
+    string binaryString;
+    for (int bit : binaryVector) {
+        binaryString += std::to_string(bit);
+    }
+
+    char convertedChar = static_cast<char>(std::bitset<8>(binaryString).to_ulong());
+    cout << convertedChar << endl;
+    return convertedChar;
+}
+
+string hammingClient(bool e)
+{
+    char inputChar;
+    std::cout << "Enter a character: ";
+    std::cin >> inputChar;
+    vector<int> data =convertASCII_Binary(inputChar);
+    reverse(data.begin(), data.end());
+    vector<int> hc =encodeHamming(data);
+
+    if (e && hc[1]==0)
+        hc[1] =1;
+    else if(e && hc[1]==1)
+        hc[1] =0;
+
+    cout << "Hamming Code: ";
+    string final;
+    
+    for (int i=1; i<hc.size(); i++)
+        cout << hc[i];
+    cout << endl;
+
+    for (int i=0; i<hc.size(); i++)
+    {
+        final +=to_string(hc[i]);
+    }
+
+    cout << "final: " << final << endl;
+    return final;
+}
+
+void hammingServer(string d)
+{
+    vector<int> hc;
+    for (char c : d) {
+        // Check if the character is a digit (0-9)
+        if (std::isdigit(c)) {
+            // Convert the character to an integer and push it into the vector
+            int digit = c - '0'; // Convert character to integer
+            hc.push_back(digit);
+        }
+    }
+    hc = decodeHamming(hc);
+    
+    cout << endl;
+    cout << "Binary representation Server: ";
+    for (auto &h : hc)
+        cout << h;
+    cout << endl;
+    cout << "Data: ";
+    vector<int> binaryVector =hc;
+    reverse(hc.begin(), hc.end());
+    binaryToChar(hc);
 }
 
 int main()
 {
-    vector<int> data ={1,0,1,1,0,1,1,0};
-    vector<int> hc =encodeHamming(data);
-    hc[2] =1;
-    vector<int> output =decodeHamming(hc);
-    for (auto &x: output)
-        cout << x;
-    cout << endl;
+    string data =hammingClient(false);
+    hammingServer(data);
+    return 0;
 }
