@@ -270,7 +270,15 @@ int main(int argc, char *argv[])
     gettimeofday(&start1, NULL);
     while(1)
     {
-        string data =hammingClient(false);
+        cout << "Menu:\n1. With Error\n2. Without Error\n3. Exit\n> ";
+        int t; cin >>t;
+        string data;
+        if (t==1)
+            data =hammingClient(true);
+        else if (t==2)
+            data =hammingClient(false);
+        else
+            exit(0);
         memset(&msg, 0, sizeof(msg));//clear the buffer
         strcpy(msg, data.c_str());
 
@@ -280,16 +288,7 @@ int main(int argc, char *argv[])
             break;
         }
         bytesWritten += send(clientSd, (char*)&msg, strlen(msg), 0);
-        cout << endl << "Awaiting server response..." << endl;
-        memset(&msg, 0, sizeof(msg));//clear the buffer
-        bytesRead += recv(clientSd, (char*)&msg, sizeof(msg), 0);
-        if(!strcmp(msg, "exit"))
-        {
-            cout << "Server has quit the session" << endl;
-            break;
-        }
-        string clientData(msg);
-        hammingServer(clientData);
+        
     }
     gettimeofday(&end1, NULL);
     close(clientSd);
